@@ -126,7 +126,10 @@ recursos no painel do Azure.
 
 <BR>
 
- - obs: devido a um erro de digitação, o nome do banco ficou como 'fullstak' ao invés de 'fullstack'
+ - 
+•	obs: devido a um erro de digitação, o nome do banco ficou como 'fullstak' porem 
+   posteriormente corrigido para 'fullstack'
+
 
 ## 4 - Conecta-se ao seu banco de dados
 
@@ -315,4 +318,575 @@ INSERT INTO Drivers (DriverID, LastName, FirstName, OriginCity) VALUES (754, 'Si
 'João', 'Rio de Janeiro');
 
 GO
+
+# Missão Prática | Tirando proveito da nuvem para projetos de software
+
+
+## Projeto de Banco de Dados: 
+
+ - Considerando o seguinte contexto
+
+Como líder de desenvolvimento de software, você propõe o desenvolvimento de um
+protótipo que inclui a criação de um banco de dados no Azure SQL. Este banco de
+dados será projetado para armazenar informações cruciais, incluindo:
+ 
+
+  - Dados dos motoristas: informações pessoais, qualificações, histórico de viagens.
+
+  - Informações dos clientes: detalhes de contato, histórico de pedidos, preferências.
+  
+  - Detalhes dos pedidos: informações do pedido, status, cronograma de entrega.
+
+O protótipo servirá como base para o aplicativo de produção futuro. Portanto, as
+escolhas tecnológicas feitas agora devem ser escaláveis e compatíveis com as
+soluções finais.
+
+### Scripts
+
+ 1) Banco de dados
+
+
+```  
+CREATE DATABASE [LogiMovTransport]  (EDITION = 'GeneralPurpose', 
+SERVICE_OBJECTIVE = 'GP_Gen5_2', MAXSIZE = 32 GB) WITH CATALOG_COLLATION = SQL_Latin1_General_CP1_CI_AS, LEDGER = OFF;
+
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ANSI_NULL_DEFAULT OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ANSI_NULLS OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ANSI_PADDING OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ANSI_WARNINGS OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ARITHABORT OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET AUTO_SHRINK OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET AUTO_UPDATE_STATISTICS ON 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET CONCAT_NULL_YIELDS_NULL OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET NUMERIC_ROUNDABORT OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET QUOTED_IDENTIFIER OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET RECURSIVE_TRIGGERS OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ALLOW_SNAPSHOT_ISOLATION ON 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET PARAMETERIZATION SIMPLE 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET READ_COMMITTED_SNAPSHOT ON 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET  MULTI_USER 
+GO
+
+ALTER DATABASE [LogiMovTransport] SET ENCRYPTION ON
+GO
+
+ALTER DATABASE [LogiMovTransport] SET QUERY_STORE = ON
+GO
+
+ALTER DATABASE [LogiMovTransport] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_POLICY = (STALE_QUERY_THRESHOLD_DAYS = 30), DATA_FLUSH_INTERVAL_SECONDS = 900, INTERVAL_LENGTH_MINUTES = 60, MAX_STORAGE_SIZE_MB = 100, QUERY_CAPTURE_MODE = AUTO, SIZE_BASED_CLEANUP_MODE = AUTO, MAX_PLANS_PER_QUERY = 200, WAIT_STATS_CAPTURE_MODE = ON)
+GO
+
+/*** 
+
+The scripts of database scoped configurations in Azure should be 
+executed inside the target database connection. 
+
+***/
+GO
+
+-- ALTER DATABASE SCOPED CONFIGURATION SET MAXDOP = 8;
+GO
+
+ALTER DATABASE [LogiMovTransport] SET  READ_WRITE 
+GO
+
+```
+ 
+2) Scripts Tabelas
+
+```
+
+/** Drivers **/
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [Drivers](
+	[DriverID] [int] NOT NULL,
+	[Nome] [varchar](100) NULL,
+	[CNH] [varchar](20) NULL,
+	[Endereço] [varchar](200) NULL,
+	[Contato] [varchar](50) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[DriverID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+/** DriverQualifications **/
+
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [DriverQualifications](
+	[QualificationID] [int] NOT NULL,
+	[DriverID] [int] NULL,
+	[Qualificação] [varchar](100) NULL,
+	[DataObtenção] [date] NULL,
+	[Validade] [date] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[QualificationID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [DriverQualifications]  WITH CHECK ADD FOREIGN KEY([DriverID])
+REFERENCES [Drivers] ([DriverID])
+GO
+
+/** DriverTravelHistory **/
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [DriverTravelHistory](
+	[TravelID] [int] NOT NULL,
+	[DriverID] [int] NULL,
+	[DataViagem] [date] NULL,
+	[Origem] [varchar](200) NULL,
+	[Destino] [varchar](200) NULL,
+	[DistanciaPercorrida] [float] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[TravelID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [DriverTravelHistory]  WITH CHECK ADD FOREIGN KEY([DriverID])
+REFERENCES [Drivers] ([DriverID])
+GO
+
+/** Clients **/
+
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [Clients](
+	[ClientID] [int] NOT NULL,
+	[Nome] [varchar](100) NULL,
+	[Empresa] [varchar](100) NULL,
+	[Endereço] [varchar](200) NULL,
+	[Contato] [varchar](50) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[ClientID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+/** ClientPreferences **/
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [ClientPreferences](
+	[PreferenceID] [int] NOT NULL,
+	[ClientID] [int] NULL,
+	[Preferencia] [text] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[PreferenceID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [ClientPreferences]  WITH CHECK ADD FOREIGN KEY([ClientID])
+REFERENCES [Clients] ([ClientID])
+GO
+
+/** Orders **/
+
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [Orders](
+	[OrderID] [int] NOT NULL,
+	[ClientID] [int] NULL,
+	[DriverID] [int] NULL,
+	[DetalhesPedido] [text] NULL,
+	[DataEntrega] [date] NULL,
+	[Status] [varchar](50) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[OrderID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [Orders]  WITH CHECK ADD FOREIGN KEY([ClientID])
+REFERENCES [Clients] ([ClientID])
+GO
+
+ALTER TABLE [Orders]  WITH CHECK ADD FOREIGN KEY([DriverID])
+REFERENCES [Drivers] ([DriverID])
+GO
+
+/** OrderStatusHistory **/
+
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [OrderStatusHistory](
+	[StatusHistoryID] [int] NOT NULL,
+	[OrderID] [int] NULL,
+	[StatusAnterior] [varchar](50) NULL,
+	[StatusAtual] [varchar](50) NULL,
+	[DataMudança] [date] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[StatusHistoryID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [OrderStatusHistory]  WITH CHECK ADD FOREIGN KEY([OrderID])
+REFERENCES [Orders] ([OrderID])
+GO
+
+/** ClientOrderHistory **/
+
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [ClientOrderHistory](
+	[HistoryID] [int] NOT NULL,
+	[OrderID] [int] NULL,
+	[ClientID] [int] NULL,
+	[DataPedido] [date] NULL,
+	[ResumoPedido] [text] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[HistoryID] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [ClientOrderHistory]  WITH CHECK ADD FOREIGN KEY([ClientID])
+REFERENCES [Clients] ([ClientID])
+GO
+
+ALTER TABLE [ClientOrderHistory]  WITH CHECK ADD FOREIGN KEY([OrderID])
+REFERENCES [Orders] ([OrderID])
+GO
+ 
+```
+
+3) Manipulação de dados (CRUD)
+
+Objetivos
+
+- Inserção e Gestão de Dado
+  Dados de teste inseridos nas tabelas, cobrindo diferentes cenários e casos de
+uso.
+
+```
+
+### SQL
+
+-- Inserção de Motoristas
+
+INSERT INTO Drivers (DriverID, Nome, CNH, Endereço, Contato) VALUES
+(1, 'João Silva', '123456789', 'Rua das Flores, 100', '11987654321'),
+(2, 'Maria Oliveira', '987654321', 'Avenida do Sol, 200', '11976543210');
+
+```
+
+<BR>
+   
+<img src="images/LogiMovTransport.drivers.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+```
+### SQL
+
+-- Inserção de Qualificações dos Motoristas
+
+INSERT INTO DriverQualifications (QualificationID, DriverID, Qualificação, DataObtenção, Validade) VALUES
+(1, 1, 'Transporte de Cargas Perigosas', '2023-01-10', '2025-01-10'),
+(2, 2, 'Transporte Internacional', '2023-02-15', '2025-02-15');
+
+```
+<BR>
+   
+<img src="images/LogiMovTransport.DriverQualifications.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+```
+### SQL
+
+-- Inserção de Histórico de Viagens
+
+INSERT INTO DriverTravelHistory (TravelID, DriverID, DataViagem, Origem, Destino, DistanciaPercorrida) VALUES
+(1, 1, '2024-04-01', 'São Paulo', 'Rio de Janeiro', 430.5),
+(2, 2, '2024-04-02', 'Curitiba', 'Porto Alegre', 711.0);
+
+```
+
+<BR>
+   
+<img src="images/LogiMovTransport.DriverTravelHistory.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+```
+### SQL
+
+-- Inserção de Clientes
+
+INSERT INTO Clients (ClientID, Nome, Empresa, Endereço, Contato) VALUES
+(1, 'Empresa A', 'A Ltda', 'Rua A, 50', '11333445566'),
+(2, 'Empresa B', 'B S.A.', 'Avenida B, 100', '11222444666');
+```
+
+
+<BR>
+   
+<img src="images/LogiMovTransport.Clients.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+```
+### SQL
+
+-- Inserção de Preferências dos Clientes
+
+INSERT INTO ClientPreferences (PreferenceID, ClientID, Preferencia) VALUES
+(1, 1, 'Preferência por transportes rápidos e seguros'),
+(2, 2, 'Preferência por custo baixo');
+
+```
+
+
+<BR>
+   
+<img src="images/LogiMovTransport.ClientPreferences.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+
+
+```
+### SQL
+
+-- Inserção de Pedidos
+
+INSERT INTO Orders (OrderID, ClientID, DriverID, DetalhesPedido, DataEntrega, Status) VALUES
+(1, 1, 1, '50 caixas de material inflamável', '2024-04-05', 'Entregue'),
+(2, 2, 2, '100 unidades de eletrônicos', '2024-04-06', 'Em trânsito');
+```
+
+
+<BR>
+   
+<img src="images/LogiMovTransport.Orders.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+```
+### SQL
+
+-- Inserção de Histórico de Status dos Pedidos
+
+INSERT INTO OrderStatusHistory (StatusHistoryID, OrderID, StatusAnterior, StatusAtual, DataMudança) VALUES
+(1, 1, 'Em preparação', 'Entregue', '2024-04-05'),
+(2, 2, 'Aguardando coleta', 'Em trânsito', '2024-04-03');
+```
+
+
+<BR>
+   
+<img src="images/LogiMovTransport.OrderStatusHistory.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+
+
+```
+### SQL
+
+-- Inserção de Histórico de Pedidos dos Clientes
+
+INSERT INTO ClientOrderHistory (HistoryID, OrderID, ClientID, DataPedido, ResumoPedido) VALUES
+(1, 1, 1, '2024-04-01', 'Pedido de 50 caixas de material inflamável'),
+(2, 2, 2, '2024-04-02', 'Pedido de 100 unidades de eletrônicos');
+```
+
+
+<BR>
+   
+<img src="images/LogiMovTransport.ClientOrderHistory.insert.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+- Execução e Validação de Consultas:
+Consultas T-SQL executadas com sucesso, com capacidade de recuperar, filtrar e ordenar dados conforme necessário.
+
+
+```
+### SQL
+
+-- Consulta para encontrar todos os motoristas com suas qualificações
+
+SELECT d.Nome, dq.Qualificação, dq.DataObtenção, dq.Validade
+FROM Drivers d
+JOIN DriverQualifications dq ON d.DriverID = dq.DriverID;
+
+```
+
+<BR>
+   
+<img src="images/LogiMovTransport.select.motoristas_com_suas_qualificacoes.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+```
+### SQL
+
+-- Consulta para listar todos os pedidos e seus status atuais
+
+SELECT o.OrderID, c.Nome as Cliente, d.Nome as Motorista, o.DetalhesPedido, o.Status
+FROM Orders o
+JOIN Clients c ON o.ClientID = c.ClientID
+JOIN Drivers d ON o.DriverID = d.DriverID;
+
+```
+
+<BR>
+   
+<img src="images/LogiMovTransport.select.pedidos_e_seus_status_atuais.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+
+```
+### SQL
+
+-- Consulta para encontrar viagens realizadas em um determinado período
+
+SELECT dt.DataViagem, dt.Origem, dt.Destino, dt.DistanciaPercorrida
+FROM DriverTravelHistory dt
+WHERE dt.DataViagem BETWEEN '2024-04-01' AND '2024-04-30';
+```
+
+
+<BR>
+   
+<img src="images/LogiMovTransport.select.viagens_realizadas_em_determinado_período.png" alt="" style="width: 65%; display: block;"/>
+
+<BR>
+
+
+
+- Operações CRUD Eficientes:
+Demonstração de operações CRUD - Criar, Ler, Atualizar e Deletar dados.
+
+
+#### Criar (Insert)
+
+Já demonstrado acima com a inserção inicial de dados.
+
+#### Ler (Select)
+
+```sql
+-- Ler informações de um motorista específico
+SELECT * FROM Drivers WHERE DriverID = 1;
+```
+
+#### Atualizar (Update)
+
+```sql
+-- Atualizar o endereço de um cliente
+UPDATE Clients SET Endereço = 'Nova Avenida, 200' WHERE ClientID = 1;
+```
+
+#### Deletar (Delete)
+
+```sql
+-- Deletar um histórico de viagem
+DELETE FROM DriverTravelHistory WHERE TravelID = 1;
+```
+ 
+
+
+
+
+
 
